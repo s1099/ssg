@@ -18,7 +18,6 @@ Static site generator built in rust that generates HTML from markdown
     <title>{{ title }}</title>
 </head>
 <body>
-    <h1>{{ title }}</h1>
     <div>{{ content | safe }}</div>
 </body>
 </html>
