@@ -34,8 +34,8 @@ fn main() -> io::Result<()> {
         )
         .arg(
             Arg::new("html_template")
-                .short('t')
-                .long("templaye")
+                .short('H')
+                .long("template")
                 .value_name("FILE")
                 .help("Sets the HTML template to use")
                 .default_value("base.html"),
