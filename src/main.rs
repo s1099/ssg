@@ -121,11 +121,6 @@ fn main() -> io::Result<()> {
         }
     }
 
-    let ind_path = format!("{}/index.html", out_dir);
-    if !std::path::Path::new(&ind_path).exists() {
-        println!("Warning: No index.html found in '{}' directory.", out_dir);
-    }
-
     if serve {
         let index_path = Path::new(out_dir).join("index.html");
         if !index_path.exists() {
