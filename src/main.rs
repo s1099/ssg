@@ -31,13 +31,22 @@ fn main() -> io::Result<()> {
                 .value_name("DIR")
                 .help("Sets the directory to output HTML files")
                 .default_value("public"),
+        )
+        .arg(
+            Arg::new("html_template")
+                .short('t')
+                .long("templaye")
+                .value_name("FILE")
+                .help("Sets the HTML template to use")
+                .default_value("base.html"),
         );
     let matches = cmd.get_matches_mut();
 
     let input_dir = matches.get_one::<String>("input_dir").unwrap();
     let template_dir = matches.get_one::<String>("template_dir").unwrap();
     let out_dir = matches.get_one::<String>("out_dir").unwrap();
-
+    let html_template = matches.get_one::<String>("html_template").unwrap();
+    
     let tera = match Tera::new(&format!("{}/*.html", template_dir)) {
         Ok(t) => t,
         Err(e) => {
@@ -75,7 +84,7 @@ fn main() -> io::Result<()> {
                 let mut ctx = tera::Context::new();
                 ctx.insert("title", &title);
                 ctx.insert("content", &html_out);
-                let rendered = match tera.render("base.html", &ctx) {
+                let rendered = match tera.render(html_template, &ctx) {
                     Ok(rendered) => rendered,
                     Err(e) => {
                         eprintln!("Failed to render template: {}", e);

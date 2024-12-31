@@ -4,9 +4,9 @@ Static site generator built in rust that generates HTML from markdown
 
 ## Usage
 
-1. Add Markdown files in `content/`
-2. Add a `base.html` template in the `templates/` directory
-3. Run generator with `cargo run`
+1. Build using `cargo build --release`
+2. Copy the ssg binary in `target/release/` to a dir in PATH
+3. Run `ssg`, use `--help` flag to print help
 
 ### Example `base.html`
 ```html
@@ -24,4 +24,4 @@ Static site generator built in rust that generates HTML from markdown
 ```
 
 ## Requirements
-- [Rust](https://rustup.rs/)
+- [Rust and Cargo](https://rustup.rs/)
