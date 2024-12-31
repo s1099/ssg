@@ -3,7 +3,10 @@ use glob::glob;
 use pulldown_cmark::{html, Event, HeadingLevel, Parser, Tag};
 use std::fs::{self, File};
 use std::io::{self, Write};
+use std::net::SocketAddr;
+use std::path::Path;
 use tera::Tera;
+use tiny_http::{Response, Server};
 
 fn main() -> io::Result<()> {
     let mut cmd = Command::new("SSG")
@@ -39,14 +42,32 @@ fn main() -> io::Result<()> {
                 .value_name("FILE")
                 .help("Sets the HTML template to use")
                 .default_value("base.html"),
+        )
+        .arg(
+            Arg::new("serve")
+                .short('s')
+                .long("serve")
+                .help("Serve the generated website")
+                .action(clap::ArgAction::SetTrue),
+        )
+        .arg(
+            Arg::new("port")
+                .short('p')
+                .long("port")
+                .value_name("PORT")
+                .help("Sets the port to serve the website on")
+                .default_value("8080"),
         );
+
     let matches = cmd.get_matches_mut();
 
     let input_dir = matches.get_one::<String>("input_dir").unwrap();
     let template_dir = matches.get_one::<String>("template_dir").unwrap();
     let out_dir = matches.get_one::<String>("out_dir").unwrap();
     let html_template = matches.get_one::<String>("html_template").unwrap();
-    
+    let serve = matches.get_flag("serve");
+    let port = matches.get_one::<String>("port").unwrap();
+
     let tera = match Tera::new(&format!("{}/*.html", template_dir)) {
         Ok(t) => t,
         Err(e) => {
@@ -100,6 +121,20 @@ fn main() -> io::Result<()> {
         }
     }
 
+    let ind_path = format!("{}/index.html", out_dir);
+    if !std::path::Path::new(&ind_path).exists() {
+        println!("Warning: No index.html found in '{}' directory.", out_dir);
+    }
+
+    if serve {
+        let index_path = Path::new(out_dir).join("index.html");
+        if !index_path.exists() {
+            println!("Warning: No 'index.html' found in '{}'", out_dir);
+        }
+
+        serve_site(out_dir, port)?;
+    }
+
     Ok(())
 }
 
@@ -117,4 +152,44 @@ fn get_title(markdown: &str) -> String {
         }
     }
     "Untitled".to_string()
+}
+
+fn serve_site(out_dir: &str, port: &str) -> io::Result<()> {
+    let addr: SocketAddr = format!("127.0.0.1:{}", port)
+        .parse()
+        .expect("Invalid address format");
+    let server = Server::http(&addr).map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to start server: {}", e),
+        )
+    })?;
+
+    println!("Serving on http://{}", addr);
+
+    for request in server.incoming_requests() {
+        let url = request.url();
+        let file_path = Path::new(out_dir).join(if url == "/" { "index.html" } else { &url[1..] });
+
+        if file_path.exists() {
+            let file = File::open(&file_path)?;
+            let response = Response::from_file(file);
+            request.respond(response).map_err(|e| {
+                io::Error::new(
+                    io::ErrorKind::Other,
+                    format!("Failed to respond to request: {}", e),
+                )
+            })?;
+        } else {
+            let response = Response::from_string("404 Not Found").with_status_code(404);
+            request.respond(response).map_err(|e| {
+                io::Error::new(
+                    io::ErrorKind::Other,
+                    format!("Failed to respond to request: {}", e),
+                )
+            })?;
+        }
+    }
+
+    Ok(())
 }
