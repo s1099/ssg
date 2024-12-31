@@ -23,6 +23,7 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4.5.0
       with:
+        name: ${{ matrix.os }}-artifact
         path: |
           target/release/ssg.exe
           target/release/ssg
